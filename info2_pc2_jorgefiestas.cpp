@@ -2,15 +2,23 @@
 #include <unistd.h>
 using namespace std;
 
+int context;
+int context_rate;
+int processes;
+int processes_rate;
+
 string calculate_stats();
 string calculate_mem();
 
 int main(){
+	calculate_stats();
+	usleep(1000);
 	while(true){
 		cout<<calculate_mem()<<endl;
 		cout<<calculate_stats()<<endl;
+		cout<<context_rate<<endl;
+		cout<<processes_rate<<endl;
 		usleep(1000);
-		break;
 	}
 	return 0;
 }
@@ -32,6 +40,26 @@ string calculate_stats(){
 		ans += to_string(user/total*100) + "%\t";
 		ans += to_string(system/total*100) + "%\t";
 		ans += to_string(idle/total*100) + "%\n";
+	}
+	while(getline(stats, line)){
+		if(line.find("ctxt") == string::npos) continue;
+		stringstream ss(line);
+		string ctxt;
+		int t_context;
+		ss>>ctxt>>t_context;
+		context_rate = t_context - context;
+		context = t_context;
+		break;
+	}
+	while(getline(stats, line)){
+		if(line.find("processes") == string::npos) continue;
+		stringstream ss(line);
+		string proc;
+		int t_processes;
+		ss>>proc>>t_processes;
+		processes_rate = t_processes - processes;
+		processes = t_processes;
+		break;
 	}
 	return ans;
 }
