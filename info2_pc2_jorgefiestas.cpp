@@ -16,8 +16,8 @@ int main(){
 	while(true){
 		cout<<calculate_mem()<<endl;
 		cout<<calculate_stats()<<endl;
-		cout<<context_rate<<endl;
-		cout<<processes_rate<<endl;
+		cout<<"Contex switches rate: "<<context_rate<<endl;
+		cout<<"Process creation rate: "<<processes_rate<<endl;
 		usleep(1000);
 	}
 	return 0;
