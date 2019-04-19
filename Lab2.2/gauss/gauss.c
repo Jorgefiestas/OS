@@ -118,8 +118,15 @@ void getPivot(int nsize, int currow)
 /* For all the rows, get the pivot and eliminate all rows and columns
  * for that particular pivot row. */
 
-void computeGauss(int nsize)
-{
+void* parallel(void* data){
+		for (k = i + 1 ; k < nsize; k++){
+			matrix[j][k] -= pivotVal * matrix[i][k];
+		}
+		B[j] -= pivotVal * B[i];
+	
+}
+
+void computeGauss(int nsize){
 	int i,j,k;
 	double pivotVal;
 	int zz,xx;
@@ -145,21 +152,17 @@ void computeGauss(int nsize)
 		for (j = i + 1 ; j < nsize; j++){
 			pivotVal = matrix[j][i];
 			matrix[j][i] = 0.0;
-			for (k = i + 1 ; k < nsize; k++){
-				matrix[j][k] -= pivotVal * matrix[i][k];
-			}
-			B[j] -= pivotVal * B[i];
+
 		}
 
 	
 		printf(" ****After you are done with  interation number: %d \n",i);
-		for (zz=0;zz<nsize;zz++)
-			{
-			for(xx=0;xx<nsize;xx++)
-				{printf(" %f ",matrix[zz][xx]);
-				}
+		for (zz=0;zz<nsize;zz++){
+			for(xx=0;xx<nsize;xx++){
+				printf(" %f ",matrix[zz][xx]);
+			}
 			printf("\n");
-				}	
+		}	
 	
 	}
 }
