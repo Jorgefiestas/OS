@@ -2,11 +2,11 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <pthread.h>
 
-
-
-#define NSIZE       4
+#define NSIZE       8
 #define VERIFY      1
+#define t           4
 
 #define SWAP(a,b)       {double tmp; tmp = a; a = b; b = tmp;}
 #define SWAPINT(a,b)       {register int tmp; tmp = a; a = b; b = tmp;}
@@ -15,6 +15,12 @@
 double **matrix,*B,*V,*C;
 int *swap;
 int *random1;
+
+struct packed_data{
+    int nsize;
+    int i;
+    int sp;
+};
 
 /* Allocate the needed arrays */
 
@@ -118,17 +124,24 @@ void getPivot(int nsize, int currow)
 /* For all the rows, get the pivot and eliminate all rows and columns
  * for that particular pivot row. */
 
-void* parallel(void* data){
-		for (k = i + 1 ; k < nsize; k++){
-			matrix[j][k] -= pivotVal * matrix[i][k];
-		}
-		B[j] -= pivotVal * B[i];
-	
+void parallel(void* p){
+    struct packed_data *pack = (struct packed_data *) p;
+    int sp = pack->sp;
+    int i = pack->i;
+    int nsize = pack->nsize;
+
+    for(int j = sp; j<nsize; j += t){
+        double pivotVal = matrix[j][i];
+        matrix[j][i] = 0.0;
+        for(int k = i + 1 ; k < nsize; k++){
+            matrix[j][k] -= pivotVal * matrix[i][k];
+        }
+        B[j] -= pivotVal * B[i];
+    }
 }
 
 void computeGauss(int nsize){
-	int i,j,k;
-	double pivotVal;
+	int i,j;
 	int zz,xx;
 
 	printf("Computing and the t is %d \n",*random1);
@@ -137,25 +150,37 @@ void computeGauss(int nsize){
 		getPivot(nsize,i);
 		
 		printf("\n\n ****After getting pivot and beginning interation number: %d \n",i);
-		for (zz=0;zz<nsize;zz++)
-			{
-			for(xx=0;xx<nsize;xx++)
-				{printf(" %f ",matrix[zz][xx]);
-				}
-			printf("\n");
+		for (zz=0;zz<nsize;zz++){
+			for(xx=0;xx<nsize;xx++){
+                printf(" %f ",matrix[zz][xx]);
 			}
+			printf("\n");
+		}
 		
+        int rc;
+        pthread_t threads[t];
+        struct packed_data pack[t];
 
-
-		pivotVal = matrix[i][i];
-
-		for (j = i + 1 ; j < nsize; j++){
-			pivotVal = matrix[j][i];
-			matrix[j][i] = 0.0;
+		for (j = 0; j < t; j++){
+            pack[j].nsize = nsize;
+            pack[j].i = i;
+            pack[j].sp = i + 1 + j;
+            rc = pthread_create(threads + j, NULL, parallel,(void *)(pack+j));
+            if (rc){
+                printf("ERROR, codigo %d \n",rc);
+                exit(-1);
+            }
 
 		}
 
-	
+        for (j = 0; j<t; j++){
+            rc = pthread_join(threads[j],NULL);
+            if (rc){
+                printf("ERROR, codigo %d \n",rc);
+                exit(-1);
+            }
+        }
+
 		printf(" ****After you are done with  interation number: %d \n",i);
 		for (zz=0;zz<nsize;zz++){
 			for(xx=0;xx<nsize;xx++){
@@ -166,7 +191,6 @@ void computeGauss(int nsize){
 	
 	}
 }
-
 
 /* Solve the equation. That is for a given A*B = C type of equation,
  * find the values corresponding to the B vector, when B, is all 1's */
@@ -198,6 +222,8 @@ int main(int argc,char *argv[])
 	double Time;
 	int nsize = NSIZE;
 	int var1;
+
+    srand(time(NULL));
 
 	while((i = getopt(argc,argv,"s:t:")) != -1){
 		switch(i){
