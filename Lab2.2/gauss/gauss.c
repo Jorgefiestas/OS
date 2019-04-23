@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <pthread.h>
 
-#define NSIZE       8
+#define NSIZE       4
 #define VERIFY      1
 #define t           4
 
@@ -143,8 +143,6 @@ void parallel(void* p){
 void computeGauss(int nsize){
 	int i,j;
 	int zz,xx;
-
-	printf("Computing and the t is %d \n",*random1);
 
 	for(i = 0; i < nsize; i++){
 		getPivot(nsize,i);
