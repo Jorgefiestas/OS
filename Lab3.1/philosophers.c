@@ -7,27 +7,30 @@
 int chopsticks = 5;
 pthread_mutex_t lock;
 pthread_barrier_t barr;
+int t = 0;
 
 void* philosophers(void* integer){
     int i = *(int*)integer;
     int rolls = 20;
     int mychop = 0;
+
     while(rolls){
+        pthread_mutex_lock(&lock);
         if(chopsticks){
-            pthread_mutex_lock(&lock);
             chopsticks--;
-            pthread_mutex_unlock(&lock);
             mychop++;
         }
+        pthread_mutex_unlock(&lock);
+
+        pthread_mutex_lock(&lock);
         if(chopsticks){
-            pthread_mutex_lock(&lock);
             chopsticks--;
-            pthread_mutex_unlock(&lock);
             mychop++;
         }
+        pthread_mutex_unlock(&lock);
+
         if(mychop == 2) printf("El filosofo %d esta comiendo\n", i);
-        if(mychop == 2) printf("El filosofo %d esta hablando.\n", i);
-        usleep(200);
+        else printf("El filosofo %d esta hablando.\n", i);
         pthread_barrier_wait(&barr);
     }
     return (void*)&chopsticks;
