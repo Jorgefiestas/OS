@@ -5,9 +5,10 @@
 #include <pthread.h>
 
 int chopsticks = 5;
-pthread_mutex_t lock;
+pthread_mutex_t lock, lock1, lock2;
 pthread_barrier_t barr;
-int t = 0;
+int t = 0, finished = 0;
+int ate = 0;
 
 void* philosophers(void* integer){
     int i = *(int*)integer;
@@ -29,10 +30,32 @@ void* philosophers(void* integer){
         }
         pthread_mutex_unlock(&lock);
 
-        if(mychop == 2) printf("El filosofo %d esta comiendo\n", i);
+        if(mychop == 2){
+            printf("El filosofo %d esta comiendo\n", i);
+            rolls--;
+            pthread_mutex_lock(&lock);
+            ate = 1;
+            pthread_mutex_unlock(&lock);
+        }
         else printf("El filosofo %d esta hablando.\n", i);
         pthread_barrier_wait(&barr);
+        if(i == 1){
+            chopsticks = 5;
+            if(ate) t += 4;
+            ate = 0;
+        }
+        mychop = 0;
+        pthread_barrier_wait(&barr);
     }
+    
+    pthread_mutex_lock(&lock2);
+    finished++;
+    pthread_mutex_unlock(&lock2);
+
+    do{
+        pthread_barrier_wait(&barr);
+    }while(finished < 5);
+
     return (void*)&chopsticks;
 }
 
@@ -47,18 +70,17 @@ int main(){
     }
 
     pthread_barrier_init(&barr, NULL,5);
+    int num[] ={1,2,3,4,5};
 
-	gettimeofday(&start, NULL);
 	for(int i = 0; i<5; i++){
-		rc = pthread_create(threads + i, NULL, philosophers,(void *)&i);
+		rc = pthread_create(threads + i, NULL, philosophers,(void *)(num+i));
 		if (rc){
 			printf("ERROR, codigo %d \n",rc);
  			exit(-1);
  		}
 	}
-    gettimeofday(&end, NULL);
 
-    for (int i=0; i<t; i++){
+    for (int i=0; i<5; i++){
 		rc = pthread_join(threads[i],NULL);
 		if (rc){
 			printf("ERROR, codigo %d \n",rc);
@@ -66,7 +88,7 @@ int main(){
 		}
 	}
 
-    printf("finish\n");
+    printf("Tomaron %d segundos en terminar de comer.\n", t);
     
     return 0;
 }
